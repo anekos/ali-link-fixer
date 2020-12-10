@@ -1,30 +1,35 @@
 
-let body = document.querySelector('body');
-let eventType = 'mousedown';
-let useCapture = true;
-
-let fix = function () {
-  console.log('AliLinkFixer: Fixing');
-
-  let targets = document.querySelectorAll('a[data-href]');
-  if (targets.length <= 0) {
-    return;
+function makeHandler(target) {
+  return (ev) => {
+    const url = target.getAttribute('data-href');
+    ev.preventDefault();
+    ev.stopPropagation();
+    window.open(url)
   }
+}
 
-  Array.slice(targets).forEach(it => {
-    let parent = it.parentNode;
-    let next = it.nextSibling;
-    let cloned = it.cloneNode(true);
-    cloned.href = it.getAttribute('data-href');
-    parent.removeChild(it);
-    parent.insertBefore(cloned, next);
+const injected = new Set();
+
+function setup() {
+  let targets = document.querySelectorAll('a[data-href]');
+
+  let injections = 0;
+
+  Array.from(targets).forEach((target) => {
+    if (injected.has(target))
+      return;
+    injected.add(target);
+    const handler = makeHandler(target);
+    target.addEventListener('click', handler, false);
+    target.addEventListener('mousedown', handler, false);
+    injections++;
   });
-  body.removeEventListener(eventType, fix, useCapture);
-  clearTimeout(timer);
-  console.log('AliLinkFixer: Fixed');
-};
 
-let timer = setTimeout(fix, 1000);
-body.addEventListener(eventType, fix, useCapture);
+  if (0 < injections)
+    console.log(`${injections} injections`)
+}
 
 console.log('AliLinkFixer: Installed');
+
+setup();
+setInterval(setup, 200);
